@@ -12,6 +12,8 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
         }
         #ar-container {
             position: fixed;
@@ -31,7 +33,7 @@
             position: relative;
             z-index: 10;
             width: 100%;
-            height: 100%; /* Ensure full height */
+            height: 100%;
             display: flex;
             flex-direction: column;
         }
@@ -45,7 +47,7 @@
         #image-container {
             text-align: center;
             margin-bottom: 1rem;
-            display: none; /* Initially hidden */
+            display: none;
         }
         #image-container img {
             max-width: 80%;
@@ -148,13 +150,13 @@
         let watchId = null;
         let qrCodeData = null;
         let selectedLanguage = 'ja';
-        let isInitialSetup = true; // Added to track initial setup
+        let isInitialSetup = true;
 
         const translations = {
             'ja': {
                 'qr_prompt': 'QRコードを読み取って開始してください。',
                 'initial_audio_instruction': '最初の避難地点へ向かってください。',
-                ' 도착했습니다. 주변을 확인하세요.': 'に到着しました。周辺を確認してください。', // added translation for 도착했습니다
+                'arrived_at_spot': 'に到着しました。周辺を確認してください。',
                 'final_destination_audio': '目的地に到着しました。',
                 'final_destination_text': '目的地に到着しました。安全な場所に避難してください。',
                 'language': '言語:',
@@ -169,7 +171,7 @@
             'en': {
                 'qr_prompt': 'Scan the QR code to start.',
                 'initial_audio_instruction': 'Please head to the first evacuation point.',
-                ' 도착했습니다. 주변을 확인하세요.': 'You have arrived. Please check your surroundings.', // added translation for 도착했습니다
+                'arrived_at_spot': 'You have arrived. Please check your surroundings.',
                 'final_destination_audio': 'You have reached your destination.',
                 'final_destination_text': 'You have reached your destination. Please evacuate to a safe place.',
                 'language': 'Language:',
@@ -184,7 +186,7 @@
             'zh-cn': {
                 'qr_prompt': '请扫描二维码开始。',
                 'initial_audio_instruction': '请前往第一个避难点。',
-                ' 도착했습니다. 주변을 확인하세요.': '您已到达。请确认周边环境。', // added translation for 도착했습니다
+                'arrived_at_spot': '您已到达。请确认周边环境。',
                 'final_destination_audio': '您已到达目的地。',
                 'final_destination_text': '您已到达目的地。请撤离到安全场所。',
                 'language': '语言:',
@@ -213,7 +215,7 @@
                     qrCanvas.height = video.videoHeight;
 
                     function drawVideoAndDecode() {
-                        if (!qrReader.classList.contains('hidden')) { // Check if QR reader is still active
+                        if (!qrReader.classList.contains('hidden')) {
                             qrCanvasContext.drawImage(video, 0, 0, qrCanvas.width, qrCanvas.height);
                             const imageData = qrCanvasContext.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
                             const code = jsQR(imageData.data, imageData.width, imageData.height, {
@@ -225,7 +227,7 @@
                                 videoTrack.stop();
                                 stream.getTracks().forEach(track => track.stop());
                                 qrReader.classList.add('hidden');
-                                handleQRCodeData(qrCodeData); // Pass the data to handler
+                                handleQRCodeData(qrCodeData);
                             } else {
                                 requestAnimationFrame(drawVideoAndDecode);
                             }
@@ -246,7 +248,7 @@
                 const decodedData = JSON.parse(data);
                 if (decodedData && decodedData.spots) {
                     spots = decodedData.spots;
-                    initializeApp(); // Call initializeApp here after parsing data
+                    initializeApp();
                 } else {
                     throw new Error('Invalid QR code data.');
                 }
@@ -254,7 +256,7 @@
                 console.error('Error parsing QR code data:', error);
                 alert('Invalid QR code.');
                 instructionText.textContent = 'Invalid QR code.';
-                startQRCodeReader(); // Restart QR code reader
+                startQRCodeReader();
             }
         }
 
@@ -262,7 +264,7 @@
             if (spots.length > 0) {
                 arContainer.classList.remove('hidden');
                 uiContainer.classList.remove('hidden');
-                qrReader.classList.add('hidden'); // Ensure QR reader is hidden
+                qrReader.classList.add('hidden');
                 instructionText.textContent = translations[selectedLanguage]['start_navigation'];
                 startNavigation();
             } else {
@@ -272,11 +274,9 @@
             }
         }
 
-
-        // 距離計算 (Haversine formula)
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // metres
-            const φ1 = lat1 * Math.PI / 180; // φ, λ in radians
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
             const φ2 = lat2 * Math.PI / 180;
             const Δφ = (lat2 - lat1) * Math.PI / 180;
             const Δλ = (lon2 - lon1) * Math.PI / 180;
@@ -286,11 +286,10 @@
                 Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-            const d = R * c; // in metres
+            const d = R * c;
             return d;
         }
 
-        // 音声再生
         function playAudio(src) {
             audioPlayer.src = src;
             audioPlayer.load();
@@ -300,12 +299,10 @@
             });
         }
 
-        // テキスト表示
         function showText(text) {
             speechText.textContent = text;
         }
 
-        // 画像表示
         function showImage(src) {
             if (src) {
                 spotImage.src = src;
@@ -315,7 +312,6 @@
             }
         }
 
-        // AR表示初期化 (Three.jsを使用)
         async function initAR() {
             if ('xr' in navigator) {
                 try {
@@ -340,7 +336,6 @@
                     const light = new THREE.HemisphereLight(0xffffff, 0x444444);
                     scene.add(light);
 
-                    // ARオブジェクト（例：避難方向を示す矢印）
                     const arrowGeometry = new THREE.ConeGeometry(0.5, 1.5, 32);
                     const arrowMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
                     const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
@@ -354,39 +349,36 @@
                         arContainer.classList.add('hidden');
                     });
 
-                    function animate() {
+                    function animate(time, frame) {
                         if (!session) return;
 
-                        session.requestAnimationFrame((time, frame) => {
-                            if (!session) return;
-                            animate();
+                        session.requestAnimationFrame(animate);
 
-                            const pose = frame.getViewerPose(session.coordinateSystem);
-                            if (pose) {
-                                const { x, y, z, orientation } = pose.transform;
-                                camera.position.set(x, y, z);
-                                camera.quaternion.fromArray(orientation);
+                        const pose = frame.getViewerPose(session.coordinateSystem);
+                        if (pose) {
+                            const { x, y, z, orientation } = pose.transform;
+                            camera.position.set(x, y, z);
+                            camera.quaternion.fromArray(orientation);
 
-                                if (userLocation && spots[currentSpotIndex]) {
-                                    const spotLat = spots[currentSpotIndex].latitude;
-                                    const spotLon = spots[currentSpotIndex].longitude;
-                                    const distance = calculateDistance(
-                                        userLocation.latitude,
-                                        userLocation.longitude,
-                                        spotLat,
-                                        spotLon
-                                    );
+                            if (userLocation && spots[currentSpotIndex]) {
+                                const spotLat = spots[currentSpotIndex].latitude;
+                                const spotLon = spots[currentSpotIndex].longitude;
+                                const distance = calculateDistance(
+                                    userLocation.latitude,
+                                    userLocation.longitude,
+                                    spotLat,
+                                    spotLon
+                                );
 
-                                    // AR矢印の更新
-                                    const targetX = spotLon - userLocation.longitude;
-                                    const targetZ = spotLat - userLocation.latitude;
-                                    arrow.position.set(x + targetX * 10, y + 0.5, z + targetZ * 10);
-                                    arrow.lookAt(x, y, z);
-                                }
-
-                                renderer.render(scene, camera);
+                                // AR矢印の更新
+                                const targetX = spotLon - userLocation.longitude;
+                                const targetZ = spotLat - userLocation.latitude;
+                                arrow.position.set(x + targetX * 10, y + 0.5, z + targetZ * 10);
+                                arrow.lookAt(x, y, z);
                             }
-                        });
+
+                            renderer.render(scene, camera);
+                        }
                     }
 
                     isARActive = true;
@@ -403,7 +395,6 @@
             }
         }
 
-        // 現在地取得とナビゲーション開始
         function startNavigation() {
             if (!navigator.geolocation) {
                 alert('Geolocation is not supported by your browser.');
@@ -430,14 +421,13 @@
                         showText(currentSpot.guideText[selectedLanguage]);
 
                         if (distance <= 20) {
-                            // Corrected the Korean translation key to  도착했습니다. 주변을 확인하세요.
                             let audioSrc = currentSpot.audio[selectedLanguage];
-                            if(currentSpotIndex === spots.length -1){
+                            if (currentSpotIndex === spots.length - 1) {
                                 audioSrc = spots[currentSpotIndex].finalAudio[selectedLanguage];
                             }
                             playAudio(audioSrc);
                             showImage(currentSpot.image);
-                            textContainer.innerHTML = currentSpot.text[selectedLanguage]; // Use innerHTML for potential HTML content
+                            textContainer.innerHTML = currentSpot.text[selectedLanguage];
                             currentSpotIndex++;
 
                             if (currentSpotIndex < spots.length) {
@@ -447,12 +437,11 @@
                                 if (watchId) {
                                     navigator.geolocation.clearWatch(watchId);
                                 }
-                                // Show final destination image and play final audio if available
-                                if (spots[currentSpotIndex-1].finalImage) {
-                                    showImage(spots[currentSpotIndex-1].finalImage);
+                                if (spots[currentSpotIndex - 1].finalImage) {
+                                    showImage(spots[currentSpotIndex - 1].finalImage);
                                 }
-                                if (spots[currentSpotIndex-1].finalAudio) {
-                                    playAudio(spots[currentSpotIndex-1].finalAudio[selectedLanguage]);
+                                if (spots[currentSpotIndex - 1].finalAudio) {
+                                    playAudio(spots[currentSpotIndex - 1].finalAudio[selectedLanguage]);
                                 }
                             }
                         }
@@ -475,25 +464,21 @@
             );
         }
 
-        // 言語切り替え
         languageDropdown.addEventListener('change', () => {
             selectedLanguage = languageDropdown.value;
             if (spots.length > 0) {
-              instructionText.textContent = translations[selectedLanguage][currentSpotIndex < spots.length ? 'initial_audio_instruction' : 'final_destination_text'];
-              if(currentSpotIndex > 0 && currentSpotIndex <= spots.length){
-                showText(spots[currentSpotIndex-1].guideText[selectedLanguage]);
-              }
-
+                instructionText.textContent = translations[selectedLanguage][currentSpotIndex < spots.length ? 'initial_audio_instruction' : 'final_destination_text'];
+                if (currentSpotIndex > 0 && currentSpotIndex <= spots.length) {
+                    showText(spots[currentSpotIndex - 1].guideText[selectedLanguage]);
+                }
             }
         });
 
-        // 初期化処理
         if (qrCodeData) {
             initializeApp();
         } else {
             startQRCodeReader();
         }
-
     </script>
 </body>
 </html>
