@@ -1,484 +1,77 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>津波避難ARアプリ</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>AR + UIボタン</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://unpkg.com/ar.js@3.4.2/aframe/build/aframe-ar.min.js"></script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            overflow: hidden;
-        }
-        #ar-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: 0;
-        }
-        #ar-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        #ui-container {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        #info-panel {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        #image-container {
-            text-align: center;
-            margin-bottom: 1rem;
-            display: none;
-        }
-        #image-container img {
-            max-width: 80%;
-            max-height: 200px;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        #text-container {
-            background-color: rgba(255, 255, 255, 0.8);
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        #text-container p {
-            font-size: 1rem;
-            line-height: 1.5;
-            color: #333;
-        }
-        #language-selector {
-            margin-top: 1rem;
-        }
-        #qr-reader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        #qr-canvas {
-            width: 80%;
-            max-width: 600px;
-            height: auto;
-            border-radius: 0.5rem;
-            border: 0.25rem solid #fff;
-            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
-        }
-        .hidden {
-            display: none;
-        }
-        .visible {
-            display: flex !important;
-        }
+      body, html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        font-family: sans-serif;
+      }
+
+      /* 上部の画像 */
+      #overlay-image {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        width: 120px;
+        z-index: 10;
+      }
+
+      /* 下部のボタン */
+      #bottom-ui {
+        position: absolute;
+        bottom: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        z-index: 10;
+      }
+
+      .btn {
+        background-color: #2196f3;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      }
+
+      .btn:hover {
+        background-color: #1976d2;
+      }
     </style>
-</head>
-<body class="bg-gray-100">
-    <div id="ar-container" class="hidden">
-        <canvas id="ar-canvas"></canvas>
-    </div>
-    <div id="ui-container" class="container mx-auto px-4 py-8 flex flex-col items-center">
-        <div id="info-panel" class="w-full max-w-lg">
-            <h1 class="text-2xl font-semibold text-gray-800 mb-4">津波避難ARナビ</h1>
-            <p id="instruction-text" class="text-gray-700">QRコードを読み取って開始してください。</p>
-            <audio id="audio-player" preload="none"></audio>
-        </div>
-        <div id="image-container" class="w-full max-w-lg hidden">
-            <img id="spot-image" src="" alt="スポット画像">
-        </div>
-        <div id="text-container" class="w-full max-w-lg">
-            <p id="speech-text" class="text-gray-800"></p>
-        </div>
-        <div id="language-selector" class="w-full max-w-lg">
-            <label for="language-dropdown" class="block text-gray-700 text-sm font-bold mb-2">言語:</label>
-            <select id="language-dropdown" class="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <option value="ja">日本語</option>
-                <option value="en">English</option>
-                <option value="zh-cn">简体中文</option>
-            </select>
-        </div>
-    </div>
-    <div id="qr-reader" class="hidden">
-        <canvas id="qr-canvas"></canvas>
+  </head>
+  <body>
+    <!-- 上部の画像 -->
+    <img id="overlay-image" src="huyuka1.jpg" alt="ロゴ画像">
+
+    <!-- 下部のボタン -->
+    <div id="bottom-ui">
+      <button class="btn" onclick="playAudio()">音声を再生</button>
     </div>
 
+    <!-- A-Frame + AR.js シーン -->
+    <a-scene embedded arjs>
+      <a-marker preset="hiro">
+        <a-box position="0 0.5 0" material="color: red;"></a-box>
+      </a-marker>
+      <a-entity camera></a-entity>
+    </a-scene>
+
+    <!-- 音声再生用のスクリプト -->
+    <audio id="voice" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"></audio>
     <script>
-        const arContainer = document.getElementById('ar-container');
-        const arCanvas = document.getElementById('ar-canvas');
-        const uiContainer = document.getElementById('ui-container');
-        const infoPanel = document.getElementById('info-panel');
-        const instructionText = document.getElementById('instruction-text');
-        const audioPlayer = document.getElementById('audio-player');
-        const imageContainer = document.getElementById('image-container');
-        const spotImage = document.getElementById('spot-image');
-        const textContainer = document.getElementById('text-container');
-        const speechText = document.getElementById('speech-text');
-        const languageDropdown = document.getElementById('language-dropdown');
-        const qrReader = document.getElementById('qr-reader');
-        const qrCanvas = document.getElementById('qr-canvas');
-        const qrCanvasContext = qrCanvas.getContext('2d');
-
-        let isARActive = false;
-        let currentSpotIndex = 0;
-        let spots = [];
-        let userLocation = null;
-        let watchId = null;
-        let qrCodeData = null;
-        let selectedLanguage = 'ja';
-        let isInitialSetup = true;
-
-        const translations = {
-            'ja': {
-                'qr_prompt': 'QRコードを読み取って開始してください。',
-                'initial_audio_instruction': '最初の避難地点へ向かってください。',
-                'arrived_at_spot': 'に到着しました。周辺を確認してください。',
-                'final_destination_audio': '目的地に到着しました。',
-                'final_destination_text': '目的地に到着しました。安全な場所に避難してください。',
-                'language': '言語:',
-                'start_navigation': 'ナビゲーションを開始します。',
-                'error_geolocation': '位置情報の取得に失敗しました。',
-                'error_ar': 'AR機能が利用できません。',
-                'error_camera': 'カメラへのアクセスが拒否されました。',
-                'generic_error': 'エラーが発生しました。',
-                'audio_load_error': '音声ファイルの読み込みに失敗しました。',
-                'image_load_error': '画像の読み込みに失敗しました。',
-            },
-            'en': {
-                'qr_prompt': 'Scan the QR code to start.',
-                'initial_audio_instruction': 'Please head to the first evacuation point.',
-                'arrived_at_spot': 'You have arrived. Please check your surroundings.',
-                'final_destination_audio': 'You have reached your destination.',
-                'final_destination_text': 'You have reached your destination. Please evacuate to a safe place.',
-                'language': 'Language:',
-                'start_navigation': 'Starting navigation.',
-                'error_geolocation': 'Failed to get your location.',
-                'error_ar': 'AR feature is not available.',
-                'error_camera': 'Camera access was denied.',
-                'generic_error': 'An error occurred.',
-                'audio_load_error': 'Failed to load the audio file.',
-                'image_load_error': 'Failed to load the image file.',
-            },
-            'zh-cn': {
-                'qr_prompt': '请扫描二维码开始。',
-                'initial_audio_instruction': '请前往第一个避难点。',
-                'arrived_at_spot': '您已到达。请确认周边环境。',
-                'final_destination_audio': '您已到达目的地。',
-                'final_destination_text': '您已到达目的地。请撤离到安全场所。',
-                'language': '语言:',
-                'start_navigation': '开始导航。',
-                'error_geolocation': '无法获取您的位置信息。',
-                'error_ar': 'AR功能不可用。',
-                'error_camera': '相机访问被拒绝。',
-                'generic_error': '发生错误。',
-                'audio_load_error': '无法加载音频文件。',
-                'image_load_error': '无法加载图像文件。',
-            },
-        };
-
-        // QRコード読み取り開始
-        function startQRCodeReader() {
-            qrReader.classList.remove('hidden');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' },audio: true })
-                .then(stream => {
-                    const videoTrack = stream.getVideoTracks()[0];
-                    const video = document.createElement('video');
-                    video.srcObject = stream;
-                    video.setAttribute('playsinline', true);
-                    video.play();
-
-                    qrCanvas.width = video.videoWidth;
-                    qrCanvas.height = video.videoHeight;
-
-                    function drawVideoAndDecode() {
-                        if (!qrReader.classList.contains('hidden')) {
-                            qrCanvasContext.drawImage(video, 0, 0, qrCanvas.width, qrCanvas.height);
-                            const imageData = qrCanvasContext.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
-                            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                                inversionAttempts: 'inversion',
-                            });
-
-                            if (code) {
-                                qrCodeData = code.data;
-                                videoTrack.stop();
-                                stream.getTracks().forEach(track => track.stop());
-                                qrReader.classList.add('hidden');
-                                handleQRCodeData(qrCodeData);
-                            } else {
-                                requestAnimationFrame(drawVideoAndDecode);
-                            }
-                        }
-                    }
-
-                    drawVideoAndDecode();
-                })
-                .catch(err => {
-                    console.error('Error accessing the camera:', err);
-                    alert(translations[selectedLanguage]['error_camera']);
-                    instructionText.textContent = translations[selectedLanguage]['error_camera'];
-                });
-        }
-
-        function handleQRCodeData(data) {
-            try {
-                const decodedData = JSON.parse(data);
-                if (decodedData && decodedData.spots) {
-                    spots = decodedData.spots;
-                    initializeApp();
-                } else {
-                    throw new Error('Invalid QR code data.');
-                }
-            } catch (error) {
-                console.error('Error parsing QR code data:', error);
-                alert('Invalid QR code.');
-                instructionText.textContent = 'Invalid QR code.';
-                startQRCodeReader();
-            }
-        }
-
-        function initializeApp() {
-            if (spots.length > 0) {
-                arContainer.classList.remove('hidden');
-                uiContainer.classList.remove('hidden');
-                qrReader.classList.add('hidden');
-                instructionText.textContent = translations[selectedLanguage]['start_navigation'];
-                startNavigation();
-            } else {
-                instructionText.textContent = 'No spots data found.';
-                alert('No spots data found. Please check the QR code.');
-                startQRCodeReader();
-            }
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3;
-            const φ1 = lat1 * Math.PI / 180;
-            const φ2 = lat2 * Math.PI / 180;
-            const Δφ = (lat2 - lat1) * Math.PI / 180;
-            const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-            const d = R * c;
-            return d;
-        }
-
-        function playAudio(src) {
-            audioPlayer.src = src;
-            audioPlayer.load();
-            audioPlayer.play().catch(err => {
-                console.error('Error playing audio:', err);
-                alert(translations[selectedLanguage]['audio_load_error']);
-            });
-        }
-
-        function showText(text) {
-            speechText.textContent = text;
-        }
-
-        function showImage(src) {
-            if (src) {
-                spotImage.src = src;
-                imageContainer.classList.remove('hidden');
-            } else {
-                imageContainer.classList.add('hidden');
-            }
-        }
-
-        async function initAR() {
-            if ('xr' in navigator) {
-                try {
-                    const session = await navigator.xr.requestSession('immersive-ar', {
-                        requiredFeatures: ['local-floor', 'camera'],
-                    });
-                    const canvas = arCanvas;
-                    const renderer = new THREE.WebGLRenderer({
-                        antialias: true,
-                        canvas: canvas,
-                    });
-                    renderer.setSize(window.innerWidth, window.innerHeight);
-                    renderer.xr.setSession(session);
-
-                    const scene = new THREE.Scene();
-                    const camera = new THREE.PerspectiveCamera();
-
-                    session.updateRenderState({
-                        baseLayer: new XRWebGLLayer(session, renderer.getContext()),
-                    });
-
-                    const light = new THREE.HemisphereLight(0xffffff, 0x444444);
-                    scene.add(light);
-
-                    const arrowGeometry = new THREE.ConeGeometry(0.5, 1.5, 32);
-                    const arrowMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                    const arrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
-                    arrow.rotation.x = -Math.PI / 2;
-                    scene.add(arrow);
-
-                    session.addEventListener('end', () => {
-                        renderer.dispose();
-                        session = null;
-                        isARActive = false;
-                        arContainer.classList.add('hidden');
-                    });
-
-                    function animate(time, frame) {
-                        if (!session) return;
-
-                        session.requestAnimationFrame(animate);
-
-                        const pose = frame.getViewerPose(session.coordinateSystem);
-                        if (pose) {
-                            const { x, y, z, orientation } = pose.transform;
-                            camera.position.set(x, y, z);
-                            camera.quaternion.fromArray(orientation);
-
-                            if (userLocation && spots[currentSpotIndex]) {
-                                const spotLat = spots[currentSpotIndex].latitude;
-                                const spotLon = spots[currentSpotIndex].longitude;
-                                const distance = calculateDistance(
-                                    userLocation.latitude,
-                                    userLocation.longitude,
-                                    spotLat,
-                                    spotLon
-                                );
-
-                                // AR矢印の更新
-                                const targetX = spotLon - userLocation.longitude;
-                                const targetZ = spotLat - userLocation.latitude;
-                                arrow.position.set(x + targetX * 10, y + 0.5, z + targetZ * 10);
-                                arrow.lookAt(x, y, z);
-                            }
-
-                            renderer.render(scene, camera);
-                        }
-                    }
-
-                    isARActive = true;
-                    arContainer.classList.remove('hidden');
-                    animate();
-                } catch (error) {
-                    console.error('Error initializing AR:', error);
-                    alert(translations[selectedLanguage]['error_ar']);
-                    instructionText.textContent = translations[selectedLanguage]['error_ar'];
-                }
-            } else {
-                alert(translations[selectedLanguage]['error_ar']);
-                instructionText.textContent = translations[selectedLanguage]['error_ar'];
-            }
-        }
-
-        function startNavigation() {
-            if (!navigator.geolocation) {
-                alert('Geolocation is not supported by your browser.');
-                instructionText.textContent = 'Geolocation is not supported by your browser.';
-                return;
-            }
-
-            watchId = navigator.geolocation.watchPosition(
-                position => {
-                    userLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                    };
-
-                    if (spots.length > 0) {
-                        const currentSpot = spots[currentSpotIndex];
-                        const distance = calculateDistance(
-                            userLocation.latitude,
-                            userLocation.longitude,
-                            currentSpot.latitude,
-                            currentSpot.longitude
-                        );
-
-                        showText(currentSpot.guideText[selectedLanguage]);
-
-                        if (distance <= 20) {
-                            let audioSrc = currentSpot.audio[selectedLanguage];
-                            if (currentSpotIndex === spots.length - 1) {
-                                audioSrc = spots[currentSpotIndex].finalAudio[selectedLanguage];
-                            }
-                            playAudio(audioSrc);
-                            showImage(currentSpot.image);
-                            textContainer.innerHTML = currentSpot.text[selectedLanguage];
-                            currentSpotIndex++;
-
-                            if (currentSpotIndex < spots.length) {
-                                instructionText.textContent = `次の避難地点へ向かってください。`;
-                            } else {
-                                instructionText.textContent = translations[selectedLanguage]['final_destination_text'];
-                                if (watchId) {
-                                    navigator.geolocation.clearWatch(watchId);
-                                }
-                                if (spots[currentSpotIndex - 1].finalImage) {
-                                    showImage(spots[currentSpotIndex - 1].finalImage);
-                                }
-                                if (spots[currentSpotIndex - 1].finalAudio) {
-                                    playAudio(spots[currentSpotIndex - 1].finalAudio[selectedLanguage]);
-                                }
-                            }
-                        }
-                        if (isInitialSetup) {
-                            initAR();
-                            isInitialSetup = false;
-                        }
-                    }
-                },
-                error => {
-                    console.error('Error getting location:', error);
-                    alert(translations[selectedLanguage]['error_geolocation']);
-                    instructionText.textContent = translations[selectedLanguage]['error_geolocation'];
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 5000,
-                    maximumAge: 0,
-                }
-            );
-        }
-
-        languageDropdown.addEventListener('change', () => {
-            selectedLanguage = languageDropdown.value;
-            if (spots.length > 0) {
-                instructionText.textContent = translations[selectedLanguage][currentSpotIndex < spots.length ? 'initial_audio_instruction' : 'final_destination_text'];
-                if (currentSpotIndex > 0 && currentSpotIndex <= spots.length) {
-                    showText(spots[currentSpotIndex - 1].guideText[selectedLanguage]);
-                }
-            }
-        });
-
-        if (qrCodeData) {
-            initializeApp();
-        } else {
-            startQRCodeReader();
-        }
+      function playAudio() {
+        const audio = document.getElementById("voice");
+        audio.play();
+      }
     </script>
-</body>
+  </body>
 </html>
