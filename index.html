@@ -203,7 +203,7 @@
         // QRコード読み取り開始
         function startQRCodeReader() {
             qrReader.classList.remove('hidden');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' },audio: true })
                 .then(stream => {
                     const videoTrack = stream.getVideoTracks()[0];
                     const video = document.createElement('video');
