@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+    
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <title>避難,evacuation</title>
+        <link rel="stylesheet" href="./css/styles.css">
+        <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+        <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/geolib@3.3.4/lib/index.min.js"></script>
+        <script src="./js/ar.js"></script>
+        <style>
+          body, html { margin: 0; overflow: hidden; }
+        </style>
+    </head>
+
+    <body style="margin: 0; overflow: hidden;">
+      <div id="image">
+        <!-- 画像表示のコード -->
+        <img id="myImage" src="./tour.jpg" width="280" />
+      </div>
+
+      <div class="backGround" id="ar"><!-- AR表示のコード -->
+         <a-scene id="scene" vr-mode-ui="enabled: false" embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+            <a-camera gps-camera rotation-reader id="camera"></a-camera>
+         </a-scene>
+      </div>
+    
+      <!-- 各種ボタンのコード） -->
+        <button id="startTour" onclick="startTour()">ツアーを開始する</button>
+        <button id="stopTour" onclick="stopTour()" style="display:none;">ツアーを終了</button>
+        <button id="stopbgmBTN" onclick="stopBGM()" style="display:none;">音声停止</button>
+    
+      <!-- ◆音声MP3を記入（プリロード用) -->
+      <link rel="preload" href="./Cheery_Melodies.mp3" as="audio">
+      <link rel="preload" href="./Cheery_Melodies.mp3" as="audio">
+      <link rel="preload" href="./Cheery_Melodies.mp3" as="audio">
+      <audio id="audioPlayer" preload="auto" loop></audio>
+    </body>
+
+</html>
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
