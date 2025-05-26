@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>アウトカメラ背景</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+    }
+
+    #camera-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: -1;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      color: white;
+      text-align: center;
+      margin-top: 40vh;
+      font-size: 2em;
+    }
+  </style>
+
+</head>
+<body>
+  <video id="camera-bg" autoplay muted playsinline></video>
+  <div class="content">アウトカメラ背景のWebサイト！</div>
+
+  <script>
+    const video = document.getElementById('camera-bg');
+
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: "environment" } }, // 背面カメラ指定
+      audio: false
+    })
+    .then(stream => {
+      video.srcObject = stream;
+    })
+    .catch(err => {
+      console.error('カメラにアクセスできません:', err);
+    });
+    // === スポット情報の配列 ===
+    const spots = [
+      {
+        name: "スポット1",
+        lat: 35.83850196145268,
+        lng: 139.58594834578963,
+        radius: 10,
+        audioSrc: "Cheery_Melodies.mp3",
+        audio: null,
+        isInRange: false
+      },
+      {
+        name: "スポット2",
+        lat: 35.83827730992454,
+        lng: 139.5860521973704,
+        radius: 10,
+        audioSrc: "Cheery_Melodies.mp3",
+        audio: null,
+        isInRange: false
+      },
+      // さらにスポットを追加可能
+    ];
+
+    // Audioインスタンスを初期化
+    spots.forEach(spot => {
+      spot.audio = new Audio(spot.audioSrc);
+      spot.audio.loop = true;
+    });
+
+    // 現在位置の追跡
+    function startTracking() {
+      if (!navigator.geolocation) {
+        alert("このブラウザはGPSをサポートしていません。");
+        return;
+      }
+
+      setInterval(() => {
+        navigator.geolocation.getCurrentPosition(checkSpots, error);
+      }, 3000);
+    }
+
+    function checkSpots(position) {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+
+      spots.forEach(spot => {
+        const distance = getDistance(userLat, userLng, spot.lat, spot.lng);
+
+        if (distance <= spot.radius) {
+          if (!spot.isInRange) {
+            spot.isInRange = true;
+            spot.audio.play().catch(e => console.log("再生エラー:", e));
+            console.log(`${spot.name} に入りました`);
+          }
+        } else {
+          if (spot.isInRange) {
+            spot.isInRange = false;
+            spot.audio.pause();
+            spot.audio.currentTime = 0;
+            console.log(`${spot.name} から出ました`);
+          }
+        }
+      });
+    }
+
+    function error(err) {
+      console.warn("位置情報エラー:", err.message);
+    }
+
+    // 距離計算（Haversine formula）
+    function getDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371000; // 地球の半径（メートル）
+      const toRad = deg => deg * Math.PI / 180;
+
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLng / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    // 最初のタップで自動再生許可
+    document.body.addEventListener("click", () => {
+      spots.forEach(spot => {
+        spot.audio.play().then(() => spot.audio.pause());
+      });
+    }, { once: true });
+
+    window.onload = startTracking;
+  </script>
+</body>
+</html>
