@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>アウトカメラ背景</title>
+  <title>カメラ背景 + GPS音声再生</title>
   <style>
     body, html {
       margin: 0;
@@ -50,7 +50,7 @@
   </div>
 
   <script>
-    // カメラ起動
+    // === 背面カメラ起動 ===
     const video = document.getElementById('camera-bg');
     navigator.mediaDevices.getUserMedia({
       video: { facingMode: { exact: "environment" } },
@@ -63,20 +63,22 @@
       console.error('カメラにアクセスできません:', err);
     });
 
-    // 音声再生制御
-    const audio = new Audio('Cheery_Melodies.mp3'); // ここに再生したいMP3ファイルのパス
+    // === 音声の準備 ===
+    const audio = new Audio('Cheery_Melodies.mp3'); // 音声ファイル名
     audio.loop = true;
 
-    const playBtn = document.getElementById('play-btn');
     let isPlaying = false;
+    let isInRange = false;
 
+    // === 再生ボタン ===
+    const playBtn = document.getElementById('play-btn');
     playBtn.addEventListener('click', () => {
       if (!isPlaying) {
         audio.play().then(() => {
           isPlaying = true;
           playBtn.textContent = '音声を停止';
         }).catch(err => {
-          console.error('再生に失敗:', err);
+          console.error('再生エラー:', err);
         });
       } else {
         audio.pause();
@@ -84,6 +86,74 @@
         playBtn.textContent = '音声を再生';
       }
     });
+
+    // === GPSスポット設定 ===
+    const targetLat = 35.6930408573659;  // 例: 東京駅
+    const targetLng = 140.05085339690442;
+    const radius = 20; // メートル
+
+    function startTracking() {
+      if (!navigator.geolocation) {
+        alert("このブラウザはGPSをサポートしていません。");
+        return;
+      }
+
+      setInterval(() => {
+        navigator.geolocation.getCurrentPosition(checkPosition, gpsError);
+      }, 3000);
+    }
+
+    function checkPosition(position) {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+
+      const distance = getDistance(userLat, userLng, targetLat, targetLng);
+
+      if (distance <= radius) {
+        if (!isInRange) {
+          isInRange = true;
+          if (!isPlaying) {
+            audio.play().then(() => {
+              isPlaying = true;
+              playBtn.textContent = '音声を停止';
+              console.log('GPS範囲内で自動再生');
+            });
+          }
+        }
+      } else {
+        if (isInRange) {
+          isInRange = false;
+          if (isPlaying) {
+            audio.pause();
+            isPlaying = false;
+            playBtn.textContent = '音声を再生';
+            console.log('GPS範囲外で自動停止');
+          }
+        }
+      }
+    }
+
+    function gpsError(err) {
+      console.warn('位置情報の取得に失敗:', err.message);
+    }
+
+    function getDistance(lat1, lng1, lat2, lng2) {
+      const R = 6371000; // 地球の半径（m）
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+
+      const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                Math.sin(dLng / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    // === ページ読み込み後に追跡開始 ===
+    window.onload = () => {
+      startTracking();
+    };
   </script>
 </body>
 </html>
